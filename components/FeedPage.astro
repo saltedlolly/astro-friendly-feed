@@ -1,0 +1,358 @@
+---
+// The friendly feed page: put it inside your own layout, on the page the
+// integration's `page` option names (default /subscribe/). The middleware
+// shows that page at your feeds' addresses when someone opens one in a
+// browser tab; visited at its own address, it's a plain "follow" page.
+//
+// Props (all optional):
+//   posts        the latest posts to list: [{ title, url, date }]
+//   allPosts     where "See all posts →" goes (shown only with this)
+//   narrowPosts  how many posts to show when the page is one column (phones)
+//   locale, messages  the language, and any wording to change
+// Slot "follow": your own "Other ways to follow" (Bluesky, Mastodon, a
+// newsletter…), shown in its own panel.
+import settings from "../lib/settings";
+import { escapeHtml, messagesFor, pickLocale, translate, translateHtml } from "../lib/i18n";
+
+interface Props {
+  posts?: { title: string; url: string; date?: Date | string }[];
+  allPosts?: string;
+  narrowPosts?: number;
+  locale?: string;
+  messages?: Record<string, string>;
+}
+
+const { posts = [], allPosts, narrowPosts } = Astro.props;
+const lang = pickLocale(Astro.props.locale, settings.locale, Astro.currentLocale);
+const messages = messagesFor(lang, { ...settings.messages, ...Astro.props.messages });
+const t = (key: string, vars: Record<string, string> = {}) => translate(messages, lang, key, vars);
+const th = (key: string, html: Record<string, string>, vars: Record<string, string> = {}) =>
+  translateHtml(messages, lang, key, html, vars);
+
+// Which feed was opened (the address the visitor is at), or, visited at the
+// page's own address, the first one.
+const key = (path: string) => `/${path.replace(/^\/+|\/+$/g, "")}`;
+const opened = settings.feeds.find((feed) => key(feed.path) === key(Astro.originPathname));
+const feed = opened ?? settings.feeds[0];
+const feedUrl = new URL(feed.path, `${settings.site}/`).href;
+const others = settings.feeds.filter((other) => other !== feed);
+const list = new Intl.ListFormat(lang, { type: "conjunction" });
+const othersHtml = list.format(
+  others.map((other) => `<a href="${escapeHtml(other.path)}">${escapeHtml(t(`other.${other.type}`))}</a>`),
+);
+const versionHtml = others.length
+  ? feed.type === "rss"
+    ? th("version.preferred", { others: othersHtml })
+    : th("version.this", { others: othersHtml }, { type: t(`type.${feed.type}`) })
+  : "";
+const rawHref = `${feed.path}${feed.path.includes("?") ? "&" : "?"}raw`;
+
+const builtInReaders = [
+  { name: "NetNewsWire", url: "https://netnewswire.com/", about: t("readers.netnewswire") },
+  { name: "Feedly", url: "https://feedly.com/", about: t("readers.feedly") },
+  { name: "Inoreader", url: "https://www.inoreader.com/", about: t("readers.inoreader") },
+];
+const readers = settings.readers === false ? [] : (settings.readers ?? builtInReaders);
+const hasFollow = Astro.slots.has("follow");
+
+// Dates use the full locale given ("en-GB": 14 November 2026), not just the
+// language the wording is in.
+const dateLocale = Astro.props.locale ?? settings.locale ?? Astro.currentLocale ?? lang;
+const formatDate = (date: Date | string) =>
+  new Intl.DateTimeFormat(dateLocale, { day: "numeric", month: "long", year: "numeric" }).format(new Date(date));
+---
+
+<div class:list={["ff", { "ff--posts": posts.length > 0 }]}>
+  <div class="ff__grid">
+    <header class="ff__card ff__intro">
+      <h1>{opened ? t("heading.feed", { name: settings.name }) : t("heading.page", { name: settings.name })}</h1>
+      <p>{t("intro")}</p>
+      <div class="ff__address" data-ff-copy>
+        <code>{feedUrl}</code>
+        <button type="button" data-copy data-copied={t("copied")} hidden>{t("copy")}</button>
+      </div>
+      {/* feed: hands the address to the reader app registered for it (most Mac
+          and iPhone readers). Never standardised and does nothing without an
+          app, so it's the secondary choice beside Copy. feed:https://… rather
+          than feed://…, which apps read as http. */}
+      <p class="ff__open">
+        <a href={`feed:${feedUrl}`}>{t("open")}</a>
+        <span>{t("openNote")}</span>
+      </p>
+      <p class="ff__small">
+        {versionHtml && <Fragment set:html={`${versionHtml} `} />}
+        <Fragment set:html={th("raw", { link: `<a href="${escapeHtml(rawHref)}" rel="nofollow">${escapeHtml(t("rawLink"))}</a>` })} />
+        <br />
+        <Fragment set:html={th("newTo", { link: `<a href="https://aboutfeeds.com/">${escapeHtml(t("aboutFeeds"))}</a>` })} />
+      </p>
+    </header>
+
+    {readers.length > 0 && (
+      <section class="ff__card ff__readers">
+        <h2>{t("readers.heading")}</h2>
+        <p>{t("readers.intro")}</p>
+        <ul>
+          {readers.map((reader) => (
+            <li><a href={reader.url}>{reader.name}</a>{reader.about && `, ${reader.about}`}</li>
+          ))}
+        </ul>
+      </section>
+    )}
+
+    {hasFollow && (
+      <section class="ff__card ff__follow">
+        <h2>{t("follow.heading")}</h2>
+        <slot name="follow" />
+      </section>
+    )}
+
+    {posts.length > 0 && (
+      <section class="ff__card ff__posts">
+        <h2>{t("posts.heading")}</h2>
+        <ul>
+          {posts.map((post, index) => (
+            <li class={narrowPosts !== undefined && index >= narrowPosts ? "ff__wide-only" : undefined}>
+              <a href={post.url}>{post.title}</a>
+              {post.date && <time datetime={new Date(post.date).toISOString()}>{formatDate(post.date)}</time>}
+            </li>
+          ))}
+        </ul>
+        {allPosts && <p class="ff__all"><a href={allPosts}>{t("posts.all")}</a></p>}
+      </section>
+    )}
+  </div>
+</div>
+
+<script>
+  for (const box of document.querySelectorAll<HTMLElement>("[data-ff-copy]")) {
+    const button = box.querySelector<HTMLButtonElement>("[data-copy]")!;
+    const address = box.querySelector("code")!.textContent ?? "";
+    if (!navigator.clipboard) continue;
+    const label = button.textContent;
+    button.hidden = false;
+    button.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(address);
+        button.textContent = button.dataset.copied ?? label;
+        setTimeout(() => (button.textContent = label), 2000);
+      } catch {
+        // Clipboard refused: the address stays on screen to copy by hand.
+      }
+    });
+  }
+</script>
+
+<style is:global>
+  /* Everything is in :where() (the two buttons: .ff :where()), so the site's
+     rules win. Colours and
+     sizes come from these variables; set them on .ff (or anywhere above it)
+     to match your site. Links use your site's own link styles. */
+  :where(.ff) {
+    --ff-gap: 24px;
+    --ff-radius: 18px;
+    --ff-card-padding: clamp(22px, 4vw, 40px);
+    --ff-card-bg: color-mix(in srgb, currentColor 4%, transparent);
+    --ff-border: color-mix(in srgb, currentColor 14%, transparent);
+    --ff-muted: color-mix(in srgb, currentColor 65%, transparent);
+    --ff-well: color-mix(in srgb, currentColor 6%, transparent);
+    --ff-accent: LinkText;
+    --ff-accent-hover: var(--ff-accent);
+    --ff-accent-text: Canvas;
+    --ff-code-font: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    container: friendly-feed / inline-size;
+  }
+
+  :where(.ff__grid) {
+    display: grid;
+    gap: var(--ff-gap);
+  }
+
+  :where(.ff__card) {
+    padding: var(--ff-card-padding);
+    border: 1px solid var(--ff-border);
+    border-radius: var(--ff-radius);
+    background: var(--ff-card-bg);
+  }
+
+  :where(.ff__card) :where(h1, h2) {
+    margin: 0 0 12px;
+  }
+
+  :where(.ff__card) :where(h2) {
+    font-size: 22px;
+  }
+
+  :where(.ff__card) :where(p) {
+    margin: 0;
+    line-height: 1.7;
+  }
+
+  :where(.ff__card) :where(ul) {
+    margin: 14px 0 0;
+    padding: 0;
+    line-height: 1.6;
+  }
+
+  :where(.ff__intro) {
+    text-align: center;
+  }
+
+  :where(.ff__intro) :where(h1) {
+    margin-bottom: 14px;
+    font-size: clamp(30px, 4vw, 44px);
+  }
+
+  :where(.ff__intro) :where(p) {
+    max-width: 68ch;
+    margin-inline: auto;
+  }
+
+  :where(.ff__address) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 20px auto;
+  }
+
+  :where(.ff__address) :where(code) {
+    max-width: 100%;
+    padding: 10px 16px;
+    overflow-wrap: anywhere;
+    border: 1px solid var(--ff-border);
+    border-radius: 12px;
+    background: var(--ff-well);
+    font-family: var(--ff-code-font);
+    font-size: clamp(14px, 3.8vw, 17px);
+  }
+
+  /* The buttons have a little specificity (.ff), enough to beat a site's plain
+     button and link rules; any class rule of the site's still wins. */
+  .ff :where(.ff__address button) {
+    padding: 10px 18px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--ff-accent);
+    color: var(--ff-accent-text);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  :where(.ff__open) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 6px 10px;
+    margin: -6px auto 20px !important;
+    color: var(--ff-muted);
+    font-size: 14px;
+  }
+
+  .ff :where(.ff__open a) {
+    padding: 8px 16px;
+    border: 1px solid var(--ff-accent);
+    border-radius: 999px;
+    color: var(--ff-accent);
+    font-size: 15px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .ff :where(.ff__open a:hover) {
+    border-color: var(--ff-accent-hover);
+    color: var(--ff-accent-hover);
+  }
+
+  :where(.ff__small) {
+    color: var(--ff-muted);
+    font-size: 14px;
+  }
+
+  :where(.ff__readers) :where(ul) {
+    display: grid;
+    gap: 6px;
+    padding-left: 1.2em;
+  }
+
+  :where(.ff__follow) :where(ul) {
+    display: grid;
+    gap: 14px;
+    list-style: none;
+  }
+
+  :where(.ff__follow) :where(li) {
+    display: grid;
+    justify-items: start;
+    gap: 8px;
+  }
+
+  :where(.ff__posts) :where(ul) {
+    display: grid;
+    gap: 14px;
+    list-style: none;
+  }
+
+  /* The date stays on the right; a long title wraps beside it. */
+  :where(.ff__posts) :where(li) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--ff-border);
+  }
+
+  :where(.ff__posts) :where(time) {
+    color: var(--ff-muted);
+    font-size: 14px;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  :where(.ff__all) {
+    margin-top: 16px !important;
+    font-weight: 700;
+  }
+
+  /* One column (phones, tablets): the feed first, then the other panels, then
+     the posts, up to --ff-narrow-posts of them. */
+  @container friendly-feed (max-width: 999px) {
+    :where(.ff__posts .ff__wide-only) {
+      display: none;
+    }
+  }
+
+  /* Wide: the feed across the top, then the posts on the left and the other
+     panels stacked on the right. */
+  @container friendly-feed (min-width: 1000px) {
+    :where(.ff--posts .ff__grid) {
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      grid-template-rows: auto auto 1fr;
+      grid-template-areas:
+        "intro intro"
+        "posts readers"
+        "posts follow";
+      align-items: start;
+    }
+
+    :where(.ff--posts .ff__intro) {
+      grid-area: intro;
+    }
+
+    :where(.ff--posts .ff__readers) {
+      grid-area: readers;
+    }
+
+    :where(.ff--posts .ff__follow) {
+      grid-area: follow;
+    }
+
+    :where(.ff--posts .ff__posts) {
+      grid-area: posts;
+      grid-row: 2 / -1;
+    }
+  }
+</style>
