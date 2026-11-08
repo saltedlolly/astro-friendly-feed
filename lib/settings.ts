@@ -13,7 +13,7 @@ export type FriendlyFeedSettings = {
   /** The site's name, for the headings (default: its hostname). */
   name: string;
   /** Feed readers to suggest, instead of the built-in ones (false: none). */
-  readers?: { name: string; url: string; about?: string }[] | false;
+  readers?: { name: string; url: string; about?: string; platforms?: string }[] | false;
   locale?: string;
   messages?: Record<string, string>;
 };
