@@ -96,7 +96,7 @@ const formatDate = (date: Date | string) =>
         <p>{t("readers.intro")}</p>
         <ul>
           {readers.map((reader) => (
-            <li><a href={reader.url}><strong>{reader.name}</strong></a>{reader.about && `: ${reader.about}`}</li>
+            <li><a href={reader.url}>{reader.name}</a>{reader.about && `, ${reader.about}`}</li>
           ))}
         </ul>
       </section>
@@ -276,7 +276,7 @@ const formatDate = (date: Date | string) =>
 
   :where(.ff__readers) :where(ul) {
     display: grid;
-    gap: 10px;
+    gap: 6px;
     padding-left: 1.2em;
   }
 
