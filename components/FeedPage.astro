@@ -48,9 +48,10 @@ const versionHtml = others.length
 const rawHref = `${feed.path}${feed.path.includes("?") ? "&" : "?"}raw`;
 
 const builtInReaders = [
+  { name: "NewsBlur", url: "https://www.newsblur.com/", about: t("readers.newsblur") },
   { name: "NetNewsWire", url: "https://netnewswire.com/", about: t("readers.netnewswire") },
-  { name: "Feedly", url: "https://feedly.com/", about: t("readers.feedly") },
-  { name: "Inoreader", url: "https://www.inoreader.com/", about: t("readers.inoreader") },
+  { name: "Fluent Reader", url: "https://hyliu.me/fluent-reader/", about: t("readers.fluentreader") },
+  { name: "Feeder", url: "https://f-droid.org/packages/com.nononsenseapps.feeder/", about: t("readers.feeder") },
 ];
 const readers = settings.readers === false ? [] : (settings.readers ?? builtInReaders);
 const hasFollow = Astro.slots.has("follow");
@@ -93,7 +94,7 @@ const formatDate = (date: Date | string) =>
         <p>{t("readers.intro")}</p>
         <ul>
           {readers.map((reader) => (
-            <li><a href={reader.url}>{reader.name}</a>{reader.about && `, ${reader.about}`}</li>
+            <li><a href={reader.url}><strong>{reader.name}</strong></a>{reader.about && `: ${reader.about}`}</li>
           ))}
         </ul>
       </section>
@@ -273,7 +274,7 @@ const formatDate = (date: Date | string) =>
 
   :where(.ff__readers) :where(ul) {
     display: grid;
-    gap: 6px;
+    gap: 10px;
     padding-left: 1.2em;
   }
 

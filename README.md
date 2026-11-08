@@ -86,7 +86,7 @@ Now open `/rss.xml` in your browser. Visited at its own address, `/subscribe/` w
 | `feeds` | **Required.** Your feeds' addresses, such as `["/rss.xml"]` or `["/feed/", "/feed/atom/"]`. The type (RSS, Atom or JSON Feed) is guessed from the address; write `{ path: "/feed/", type: "atom" }` when the guess would be wrong. The first feed is the one shown when the page is visited at its own address. With more than one, each feed's page mentions the others ("Most apps prefer this RSS version; there's also an Atom version."). |
 | `page` | Your page that uses `<FeedPage />` (default `"/subscribe/"`). |
 | `name` | Your site's name, for the headings: "This is the My blog feed", "Follow My blog" (default: your site's hostname). Change the headings themselves with `messages`. |
-| `readers` | Feed readers to suggest, instead of the built-in NetNewsWire, Feedly and Inoreader: `[{ name, url, about }]`. `false` hides the panel. |
+| `readers` | Feed readers to suggest, instead of the built-in NewsBlur, NetNewsWire, Fluent Reader and Feeder: `[{ name, url, about }]`. `false` hides the panel. |
 | `locale` | The page's language, such as `"en-GB"` (default: Astro's current locale, else English). The full locale is used for dates. |
 | `messages` | Any of the wording to change, by key. The keys are in [`locales/en.json`](locales/en.json). |
 

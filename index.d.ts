@@ -14,7 +14,7 @@ export interface FriendlyFeedOptions {
   page?: string;
   /** Your site's name, for the headings (default: its hostname). */
   name?: string;
-  /** Feed readers to suggest instead of the built-in three, or false for none. */
+  /** Feed readers to suggest instead of the built-in four, or false for none. */
   readers?: { name: string; url: string; about?: string }[] | false;
   /** The page's language (default: Astro's current locale, else English). */
   locale?: string;
