@@ -2,7 +2,7 @@
 
 ## 0.2.0 (8 November 2026)
 
-- **New built-in feed readers, all free, open source and ad-free, each saying who it suits:** NewsBlur (several devices: web, iPhone and Android, synced by a free account), NetNewsWire (Mac, iPhone and iPad, synced through iCloud), Fluent Reader (Windows, Mac and Linux) and Feeder (Android). Feedly and Inoreader are gone (closed source, with ads on Inoreader's free plan). Keys: `readers.intro` and `readers.netnewswire` changed; new `readers.newsblur`, `readers.fluentreader`, `readers.feeder`; `readers.feedly` and `readers.inoreader` removed.
+- **Six built-in feed readers for different needs, each saying who it suits:** NetNewsWire (Apple devices, no account, synced through iCloud), NewsBlur (one account on Mac, iPhone, iPad, Android and the web), Folo (apps on everything, including Windows and Linux), Fluent Reader (a desktop app, no account), Feeder (an Android app, no account) and Inoreader (the most features; its free plan shows ads). All are free to start, and all but Inoreader are open source. Feedly is gone. Keys: `readers.intro`, `readers.netnewswire` and `readers.inoreader` changed; new `readers.newsblur`, `readers.folo`, `readers.fluentreader`, `readers.feeder`; `readers.feedly` removed.
 - Each reader's name is bold, followed by a colon (was a comma), and the list has a little more space between entries, as the descriptions are longer.
 
 ## 0.1.0 (8 November 2026)
