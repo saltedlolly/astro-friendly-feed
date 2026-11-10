@@ -1,6 +1,6 @@
 # Friendly Feed for Astro
 
-When someone clicks your site's RSS button, their browser usually shows them a page of raw code. **Friendly Feed for Astro** shows them a friendly page instead, at the same address: what a feed is, the address to copy, a button to open it in their feed reader app, a few feed readers to try, your other ways to follow, and your latest posts.
+When someone clicks your site's RSS button, their browser usually shows them a page of raw code. **Friendly Feed for Astro** shows them a friendly page instead, at the same address: what a feed is, the address to copy, a button to open it in their feed reader app, a few feed readers to try, a preview of what the feed holds (your latest posts), and your other ways to follow.
 
 Feed readers, and scripts that fetch your feed, still get the feed itself, exactly as before.
 
@@ -61,12 +61,17 @@ export const prerender = false;
 
 const posts = (await getCollection("blog"))
   .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
-  .slice(0, 20)
-  .map((post) => ({ title: post.data.title, url: `/blog/${post.id}/`, date: post.data.pubDate }));
+  .slice(0, 5)
+  .map((post) => ({
+    title: post.data.title,
+    url: `/blog/${post.id}/`,
+    date: post.data.pubDate,
+    summary: post.data.description,
+  }));
 ---
 
 <Layout title="Subscribe">
-  <FeedPage posts={posts} allPosts="/blog/" narrowPosts={10}>
+  <FeedPage posts={posts} allPosts="/blog/">
     <ul slot="follow">
       <li><p><strong>Mastodon:</strong> @me@example.social</p></li>
       <li><p><strong>Bluesky:</strong> <a href="https://bsky.app/profile/example.com">@example.com</a></p></li>
@@ -96,12 +101,12 @@ Now open `/rss.xml` in your browser. Visited at its own address, `/subscribe/` w
 
 | Prop | What it does |
 | --- | --- |
-| `posts` | Your latest posts: `[{ title, url, date }]`. On wide screens they sit on the left, beside the other panels. Without them, the page is a single column. |
+| `posts` | Your latest posts, shown under "example.com Feed Preview", so people can see what a feed holds: `[{ title, url, date, summary, image }]`. `summary` (a sentence or two, shown in two lines) and `image` (a picture's address; shown at 104 by 70 pixels, so about 208 by 140 is sharp) are optional. Five is a good number. Without posts, the preview is left out. |
 | `allPosts` | Where "See all posts →" goes, under the list. |
-| `narrowPosts` | How many of the posts to show when the page is one column (phones). |
+| `narrowPosts` | How many of the posts to show on narrow pages (phones). |
 | `locale`, `messages` | As for the integration, for this page only. |
 
-Its `follow` slot is for your own ways to follow: a newsletter, Mastodon, Bluesky, or [Atmosphere Comments for Astro](https://github.com/saltedlolly/astro-atmosphere-comments)'s Subscribe and Follow buttons. It's shown in an "Other ways to follow" panel, which is left out when the slot is empty.
+Its `follow` slot is for your own ways to follow: a newsletter, Mastodon, Bluesky, or [Atmosphere Comments for Astro](https://github.com/saltedlolly/astro-atmosphere-comments)'s Subscribe and Follow buttons. It's shown in an "Other ways to follow" panel beneath the preview, which is left out when the slot is empty.
 
 ## Styling
 
@@ -122,7 +127,7 @@ The page uses your layout, fonts and link styles. Every rule is wrapped in `:whe
 }
 ```
 
-By default the colours come from the text colour around the page, so it suits light and dark sites alike. The layout switches to two columns when the page itself is at least 1000px wide (a container query), so it works in narrow layouts too.
+By default the colours come from the text colour around the page, so it suits light and dark sites alike. The page is one column: the address, then the preview, then your other ways to follow. When the page itself is under 600px wide (a container query), the preview leaves out the pictures, so it works in narrow layouts too.
 
 ## Static sites
 

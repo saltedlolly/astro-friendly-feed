@@ -1,6 +1,6 @@
 {
   "name": "astro-friendly-feed",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Friendly Feed for Astro: people who open your RSS or Atom feed in a browser see a friendly page explaining how to subscribe, at the same address, while feed readers still get the feed. No XSLT.",
   "type": "module",
   "license": "MIT",

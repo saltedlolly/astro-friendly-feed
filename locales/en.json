@@ -34,6 +34,7 @@
   "readers.inoreader": "freemium",
   "platforms.inoreader": "the web, iPhone and Android",
   "follow.heading": "Other ways to follow",
-  "posts.heading": "Latest posts",
-  "posts.all": "See all posts →"
+  "posts.all": "See all posts →",
+  "preview.heading": "{{site}} Feed Preview",
+  "preview.intro": "The feed contains a list of the latest posts. Your feed reader checks it for you, so you know when there's a new post without visiting the website."
 }

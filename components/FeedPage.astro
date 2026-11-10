@@ -5,17 +5,18 @@
 // browser tab; visited at its own address, it's a plain "follow" page.
 //
 // Props (all optional):
-//   posts        the latest posts to list: [{ title, url, date }]
+//   posts        the latest posts, shown as a preview of what the feed holds: [{ title, url, date, summary, image }] (summary and
+//                image optional; image is a picture's address)
 //   allPosts     where "See all posts →" goes (shown only with this)
-//   narrowPosts  how many posts to show when the page is one column (phones)
+//   narrowPosts  how many posts to show on narrow pages (phones)
 //   locale, messages  the language, and any wording to change
 // Slot "follow": your own "Other ways to follow" (Bluesky, Mastodon, a
-// newsletter…), shown in its own panel.
+// newsletter…), shown in its own panel beneath the preview.
 import settings from "../lib/settings";
 import { escapeHtml, messagesFor, pickLocale, translate, translateHtml } from "../lib/i18n";
 
 interface Props {
-  posts?: { title: string; url: string; date?: Date | string }[];
+  posts?: { title: string; url: string; date?: Date | string; summary?: string; image?: string }[];
   allPosts?: string;
   narrowPosts?: number;
   locale?: string;
@@ -61,6 +62,8 @@ const builtInReaders = [
 }));
 const readers = settings.readers === false ? [] : (settings.readers ?? builtInReaders);
 const hasFollow = Astro.slots.has("follow");
+// The site's address without www, for the preview's heading.
+const host = new URL(settings.site).hostname.replace(/^www\./, "");
 
 // Dates use the full locale given ("en-GB": 14 November 2026), not just the
 // language the wording is in.
@@ -69,13 +72,23 @@ const formatDate = (date: Date | string) =>
   new Intl.DateTimeFormat(dateLocale, { day: "numeric", month: "long", year: "numeric" }).format(new Date(date));
 ---
 
-<div class:list={["ff", { "ff--posts": posts.length > 0 }]}>
+<div class="ff">
   <div class="ff__grid">
     <header class="ff__card ff__intro">
       <h1>{opened ? t("heading.feed", { name: settings.name }) : t("heading.page", { name: settings.name })}</h1>
       <p>{t("intro")}</p>
       <div class="ff__address" data-ff-copy>
-        <code>{feedUrl}</code>
+        {/* The address, with the feed's type beside it (RSS, Atom, JSON Feed). */}
+        <div class="ff__field">
+          <span class="ff__type">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="6.18" cy="17.82" r="2.18" />
+              <path d="M4 4.44v2.83c7.03 0 12.73 5.7 12.73 12.73h2.83c0-8.59-6.97-15.56-15.56-15.56zm0 5.66v2.83c3.9 0 7.07 3.17 7.07 7.07h2.83c0-5.47-4.43-9.9-9.9-9.9z" />
+            </svg>
+            {t(`type.${feed.type}`)}
+          </span>
+          <code>{feedUrl}</code>
+        </div>
         <button type="button" data-copy data-copied={t("copied")} hidden>{t("copy")}</button>
       </div>
       {/* feed: hands the address to the reader app registered for it (most Mac
@@ -86,6 +99,23 @@ const formatDate = (date: Date | string) =>
         <a href={`feed:${feedUrl}`}>{t("open")}</a>
         <span>{t("openNote")}</span>
       </p>
+
+      {/* Folded away, so the preview below is what catches the eye. */}
+      {readers.length > 0 && (
+        <details class="ff__readers">
+          <summary>{t("readers.heading")}</summary>
+          <p>{t("readers.intro")}</p>
+          <ul>
+            {readers.map((reader) => (
+              <li>
+                <a href={reader.url}>{reader.name}</a>{reader.about && `, ${reader.about}`}
+                {reader.platforms && <span class="ff__platforms">{t("readers.available", { platforms: reader.platforms })}</span>}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+
       <p class="ff__small">
         {versionHtml && <Fragment set:html={`${versionHtml} `} />}
         <Fragment set:html={th("raw", { link: `<a href="${escapeHtml(rawHref)}" rel="nofollow">${escapeHtml(t("rawLink"))}</a>` })} />
@@ -95,18 +125,40 @@ const formatDate = (date: Date | string) =>
       </p>
     </header>
 
-    {readers.length > 0 && (
-      <section class="ff__card ff__readers">
-        <h2>{t("readers.heading")}</h2>
-        <p>{t("readers.intro")}</p>
-        <ul>
-          {readers.map((reader) => (
-            <li>
-              <a href={reader.url}>{reader.name}</a>{reader.about && `, ${reader.about}`}
-              {reader.platforms && <span class="ff__platforms">{t("readers.available", { platforms: reader.platforms })}</span>}
+    {/* A preview of what the feed holds: its latest entries, newest first.
+        Neutral about how much each entry carries (feeds may hold whole
+        posts, a summary or just a link): title and date, plus the summary
+        and picture when the site gives them. */}
+    {posts.length > 0 && (
+      <section class="ff__card ff__preview">
+        <h2>
+          <svg class="ff__rss" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="6.18" cy="17.82" r="2.18" />
+            <path d="M4 4.44v2.83c7.03 0 12.73 5.7 12.73 12.73h2.83c0-8.59-6.97-15.56-15.56-15.56zm0 5.66v2.83c3.9 0 7.07 3.17 7.07 7.07h2.83c0-5.47-4.43-9.9-9.9-9.9z" />
+          </svg>
+          {t("preview.heading", { site: host })}
+        </h2>
+        {/* A note about the feed, boxed so it doesn't read as part of it. */}
+        <p class="ff__preview-intro">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="9.5" />
+            <path d="M12 11v6M12 7.5v.01" />
+          </svg>
+          <span>{t("preview.intro")}</span>
+        </p>
+        <ul class="ff__entries">
+          {posts.map((post, index) => (
+            <li class={narrowPosts !== undefined && index >= narrowPosts ? "ff__wide-only" : undefined}>
+              <div class="ff__entry">
+                <a href={post.url}>{post.title}</a>
+                {post.date && <time datetime={new Date(post.date).toISOString()}>{formatDate(post.date)}</time>}
+                {post.summary && <p>{post.summary}</p>}
+              </div>
+              {post.image && <img src={post.image} alt="" loading="lazy" decoding="async" />}
             </li>
           ))}
         </ul>
+        {allPosts && <p class="ff__all"><a href={allPosts}>{t("posts.all")}</a></p>}
       </section>
     )}
 
@@ -114,21 +166,6 @@ const formatDate = (date: Date | string) =>
       <section class="ff__card ff__follow">
         <h2>{t("follow.heading")}</h2>
         <slot name="follow" />
-      </section>
-    )}
-
-    {posts.length > 0 && (
-      <section class="ff__card ff__posts">
-        <h2>{t("posts.heading")}</h2>
-        <ul>
-          {posts.map((post, index) => (
-            <li class={narrowPosts !== undefined && index >= narrowPosts ? "ff__wide-only" : undefined}>
-              <a href={post.url}>{post.title}</a>
-              {post.date && <time datetime={new Date(post.date).toISOString()}>{formatDate(post.date)}</time>}
-            </li>
-          ))}
-        </ul>
-        {allPosts && <p class="ff__all"><a href={allPosts}>{t("posts.all")}</a></p>}
       </section>
     )}
   </div>
@@ -227,13 +264,42 @@ const formatDate = (date: Date | string) =>
     margin: 20px auto;
   }
 
-  :where(.ff__address) :where(code) {
+  :where(.ff__field) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 6px 12px;
     max-width: 100%;
     padding: 10px 16px;
-    overflow-wrap: anywhere;
     border: 1px solid var(--ff-border);
     border-radius: 12px;
     background: var(--ff-well);
+  }
+
+  :where(.ff__type) {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px 3px 7px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--ff-accent) 14%, transparent);
+    color: var(--ff-accent);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  :where(.ff__type) :where(svg) {
+    width: 13px;
+    height: 13px;
+    fill: currentColor;
+  }
+
+  :where(.ff__address) :where(code) {
+    min-width: 0;
+    overflow-wrap: anywhere;
     font-family: var(--ff-code-font);
     font-size: clamp(14px, 3.8vw, 17px);
   }
@@ -286,6 +352,31 @@ const formatDate = (date: Date | string) =>
     margin-top: 10px;
   }
 
+  /* "No feed reader yet?": a fold-out under the buttons. */
+  :where(.ff__readers) {
+    max-width: 52ch;
+    margin: 0 auto 22px;
+    text-align: left;
+  }
+
+  :where(.ff__readers) :where(summary) {
+    width: fit-content;
+    margin-inline: auto;
+    color: var(--ff-accent);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  :where(.ff__readers[open]) :where(summary) {
+    margin-bottom: 12px;
+  }
+
+  :where(.ff__readers) :where(p) {
+    margin: 0 !important;
+    max-width: none;
+  }
+
   :where(.ff__readers) :where(ul) {
     display: grid;
     gap: 10px;
@@ -296,6 +387,100 @@ const formatDate = (date: Date | string) =>
     display: block;
     color: var(--ff-muted);
     font-size: 14px;
+  }
+
+  /* The preview: the feed's latest entries as a plain list. */
+  :where(.ff__preview) :where(h2) {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  :where(.ff__rss) {
+    flex: none;
+    width: 0.95em;
+    height: 0.95em;
+    fill: var(--ff-accent);
+  }
+
+  :where(.ff__preview-intro) {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    max-width: 72ch;
+    margin-top: 4px !important;
+    padding: 12px 16px;
+    border: 1px solid var(--ff-border);
+    border-radius: 12px;
+    background: var(--ff-well);
+    color: var(--ff-muted);
+    font-size: 14px;
+    line-height: 1.6 !important;
+  }
+
+  :where(.ff__preview-intro) :where(svg) {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    fill: none;
+    stroke: var(--ff-accent);
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+
+  :where(.ff__entries) {
+    margin-top: 20px !important;
+    list-style: none;
+    border-top: 1px solid var(--ff-border);
+  }
+
+  :where(.ff__entries) :where(li) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 18px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--ff-border);
+  }
+
+  :where(.ff__entry) {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  :where(.ff__entry) :where(a) {
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  :where(.ff__entry) :where(time) {
+    color: var(--ff-muted);
+    font-size: 13px;
+  }
+
+  :where(.ff__entry) :where(p) {
+    display: -webkit-box;
+    margin-top: 4px !important;
+    overflow: hidden;
+    color: var(--ff-muted);
+    font-size: 14px;
+    line-height: 1.5 !important;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  :where(.ff__entries) :where(img) {
+    width: 104px;
+    height: 70px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+
+  :where(.ff__all) {
+    margin-top: 16px !important;
+    font-weight: 700;
   }
 
   :where(.ff__follow) :where(ul) {
@@ -310,70 +495,17 @@ const formatDate = (date: Date | string) =>
     gap: 8px;
   }
 
-  :where(.ff__posts) :where(ul) {
-    display: grid;
-    gap: 14px;
-    list-style: none;
-  }
-
-  /* The date stays on the right; a long title wraps beside it. */
-  :where(.ff__posts) :where(li) {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: baseline;
-    gap: 16px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--ff-border);
-  }
-
-  :where(.ff__posts) :where(time) {
-    color: var(--ff-muted);
-    font-size: 14px;
-    text-align: right;
-    white-space: nowrap;
-  }
-
-  :where(.ff__all) {
-    margin-top: 16px !important;
-    font-weight: 700;
-  }
-
-  /* One column (phones, tablets): the feed first, then the other panels, then
-     the posts, up to --ff-narrow-posts of them. */
-  @container friendly-feed (max-width: 999px) {
-    :where(.ff__posts .ff__wide-only) {
+  @container friendly-feed (max-width: 600px) {
+    :where(.ff__preview .ff__wide-only) {
       display: none;
     }
-  }
 
-  /* Wide: the feed across the top, then the posts on the left and the other
-     panels stacked on the right. */
-  @container friendly-feed (min-width: 1000px) {
-    :where(.ff--posts .ff__grid) {
-      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-      grid-template-rows: auto auto 1fr;
-      grid-template-areas:
-        "intro intro"
-        "posts readers"
-        "posts follow";
-      align-items: start;
+    :where(.ff__entries) :where(li) {
+      grid-template-columns: minmax(0, 1fr);
     }
 
-    :where(.ff--posts .ff__intro) {
-      grid-area: intro;
-    }
-
-    :where(.ff--posts .ff__readers) {
-      grid-area: readers;
-    }
-
-    :where(.ff--posts .ff__follow) {
-      grid-area: follow;
-    }
-
-    :where(.ff--posts .ff__posts) {
-      grid-area: posts;
-      grid-row: 2 / -1;
+    :where(.ff__entries) :where(img) {
+      display: none;
     }
   }
 </style>

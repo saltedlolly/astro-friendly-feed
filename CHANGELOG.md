@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0 (10 November 2026)
+
+- **A preview of the feed, front and centre:** the latest posts are now shown under an RSS icon and "example.com Feed Preview" (the site's address), with a note in a small info box (`.ff__preview-intro`) saying the feed holds the latest posts and that a feed reader checks it for you. Each entry is a plain list item with its title and date, plus a summary and picture when given, so the preview stays neutral about whether a feed carries whole posts, summaries or just links. It helps people who have never used a feed see what one is.
+- **The address box shows the feed's type:** a small badge with the feed icon and "RSS", "Atom" or "JSON Feed" (`.ff__type`), inside a new `.ff__field` box, which now carries the border and background the `<code>` had. Copy still copies only the address.
+- `posts` entries take optional `summary` and `image` (a picture's address, shown at 104 by 70 pixels).
+- **"No feed reader yet?" folds away** under the buttons (a `<details>` disclosure), so it no longer competes with the preview.
+- **One column:** the address, then the preview, then "Other ways to follow". The two-column layout (posts beside the other panels) is gone. On pages under 600px wide the preview leaves out pictures; `narrowPosts` still limits how many posts show there.
+- Keys: new `preview.heading` (`{{site}}` is the site's address) and `preview.intro`; `posts.heading` removed. Classes: new `.ff__preview`, `.ff__rss`, `.ff__entries`, `.ff__entry`; `.ff__posts` and `.ff--posts` removed; `.ff__readers` is now the `<details>`.
+
 ## 0.2.1 (10 November 2026)
 
 - The two small lines under the address (the other feeds and "View the feed's code"; "New to feeds?") are now separate paragraphs (`.ff__small`) with 10px between them, instead of one paragraph split by a line break, so they no longer look crowded.
