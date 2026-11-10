@@ -89,7 +89,8 @@ const formatDate = (date: Date | string) =>
       <p class="ff__small">
         {versionHtml && <Fragment set:html={`${versionHtml} `} />}
         <Fragment set:html={th("raw", { link: `<a href="${escapeHtml(rawHref)}" rel="nofollow">${escapeHtml(t("rawLink"))}</a>` })} />
-        <br />
+      </p>
+      <p class="ff__small">
         <Fragment set:html={th("newTo", { link: `<a href="https://aboutfeeds.com/">${escapeHtml(t("aboutFeeds"))}</a>` })} />
       </p>
     </header>
@@ -279,6 +280,10 @@ const formatDate = (date: Date | string) =>
   :where(.ff__small) {
     color: var(--ff-muted);
     font-size: 14px;
+  }
+
+  :where(.ff__small + .ff__small) {
+    margin-top: 10px;
   }
 
   :where(.ff__readers) :where(ul) {

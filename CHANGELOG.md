@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1 (10 November 2026)
+
+- The two small lines under the address (the other feeds and "View the feed's code"; "New to feeds?") are now separate paragraphs (`.ff__small`) with 10px between them, instead of one paragraph split by a line break, so they no longer look crowded.
+
 ## 0.2.0 (8 November 2026)
 
 - **Six built-in feed readers, for different needs:** NetNewsWire (Mac, iPhone and iPad), NewsBlur (the web, Mac, iPhone and Android), Folo (with AI summaries, on every platform including Windows and Linux), Fluent Reader (Windows, Mac and Linux), Feeder (Android) and Inoreader (the web, iPhone and Android). Each says whether it's free and open source or freemium, with "Available on …" (its platforms) on a smaller line beneath. Feedly is gone.
